@@ -3,14 +3,26 @@
     <div class="flex justify-between items-center mb-2">
       <div>
         <p class="text-sm font-semibold text-gray-200">{{ post.full_name}}</p>
-        <p class="text-xs text-gray-300">{{ post.publish_date }}</p>
+        <div class="flex flex-row">
+        <p class="text-xs text-gray-300 mr-2">{{ post.publish_date }}</p>
+        <p class="text-xs text-gray-300">Views:{{ post.views }}</p>
       </div>
-      <button class="text-sm font-semibold text-gray-200 hover:text-gray-500"
+      </div>
+      <div>
+        <EditPostModal v-if="isModalOpen" :post="postToEdit" @close="closeModal" @post-edited="updatePost" />
+          <div>
+            <button class="text-sm font-semibold text-gray-200 hover:text-gray-500 mr-3"
       v-if="(userStore.info && post.user_id === userStore.info.id) 
           || (userStore.info && userStore.info.role === 'Admin')" @click="deletePost(post.id)"
           >Delete</button>
+   <button class="text-sm font-semibold text-blue-500 hover:text-blue-600"
+     v-if="(userStore.info && post.user_id === userStore.info.id) 
+         || (userStore.info && userStore.info.role === 'Admin')" @click="openModal(post)"
+       >Edit</button>
+ </div>
+        </div>
     </div>
-    <h2 class="text-xl font-bold mb-2 text-gray-200">{{ post.title }}</h2>
+    <h2 class="text-xl font-bold mb-2 text-gray-200 cursor-pointer" @click="redirectToDetail(post.id)">{{ post.title }}</h2>
     <p class="text-gray-200 mb-4">{{ post.body }}</p>
     <hr class="my-4"/>
     <div class="comments">
@@ -24,8 +36,8 @@
         <p class="text-sm text-gray-200">{{ comment.body }}</p>
       </div>
       <div class="mt-4">
-        <input type="text" v-model="newComment" class="border p-2 w-full rounded" placeholder="Write a comment..." @keyup.enter="postComment" />
-        <button @click="postComment" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Post Comment</button>
+        <input type="text" :disabled="!userStore.info" v-model="newComment" class="border p-2 w-full rounded" placeholder="Write a comment..." @keyup.enter="postComment" />
+        <button @click="postComment" :disabled="!userStore.info" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Post Comment</button>
       </div>
     </div>
   </div>
@@ -38,26 +50,42 @@
 </style>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref } from 'vue';
 import api from '@/api';
 import { defineProps,defineEmits } from 'vue';
 import { useUserStore } from '@/stores/user.js';
+import router from '@/router';
+import EditPostModal from '@/components/EditPostModal.vue';
 
 const userStore = useUserStore();
 const props = defineProps(['post']);
 const newComment = ref('');
-const post = reactive({ ...props.post });
-const emit = defineEmits(['post-deleted']);
+const post = ref({ ...props.post });
+const emit = defineEmits(['post-deleted','post-edited']);
+
+
+const isModalOpen = ref(false);
+const postToEdit = ref();
+
+const openModal = (post) => {
+  isModalOpen.value = true;
+  postToEdit.value = post;
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+  postToEdit.value = null;
+};
 
 const postComment = async () => {
   if (newComment.value.trim() !== '') {
     try {
       const response = await api.post('/comments', {
-        post_id: post.id,
+        post_id: post.value.id,
         body: newComment.value
       });
       if (response.status === 201) {
-        post.comments.push(response.data.comment);
+        post.value.comments.push(response.data.comment);
         newComment.value = '';
       }
     } catch (err) {
@@ -69,7 +97,7 @@ const deleteComment = async (commentId) => {
   try {
     const response = await api.delete(`/comments/${commentId}`);
     if (response.status === 200) {
-      post.comments = post.comments.filter(comment => comment.id !== commentId);
+      post.value.comments = post.value.comments.filter(comment => comment.id !== commentId);
     }
   } catch (err) {
     console.error(err);
@@ -85,4 +113,12 @@ const deletePost = async (postId) => {
     console.error(err);
   }
 }
+const updatePost = () => {
+  emit('post-edited');
+}
+
+const redirectToDetail = (postId) => {
+  router.push(`/posts/${postId}`)
+}
+
 </script>
