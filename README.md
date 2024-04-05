@@ -1,24 +1,27 @@
-# blog-front
 
-## Project setup
-```
-npm install
-```
+# Blog front
 
-### Compiles and hot-reloads for development
-```
+git clone https://github.com/koberidzemikheili/blog-front.git
+
+cd blog-front
+
+npm-install
+
+in src/api.js setup baseurl for backend
+
 npm run serve
-```
 
-### Compiles and minifies for production
-```
-npm run build
-```
+There are 3 users 1 admin and 2 editors initially created from seeder
 
-### Lints and fixes files
-```
-npm run lint
-```
+Credentials:
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+Admin: email:
+ admin@example.com password: password
+
+editor: email:
+ editor@example.com password: password
+
+editor: email:
+ secondeditor@example.com password: password
+
+ normal users can be created through registration form 
